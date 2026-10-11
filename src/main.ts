@@ -101,7 +101,7 @@ app.innerHTML = `
 
   <footer class="footer">
     <span>Static site · no backend · input is saved only in this browser's localStorage.</span>
-    <a href="https://github.com/jonathan-joo/genesis" rel="noopener" target="_blank">Source on GitHub</a>
+    <a href="https://github.com/jjoo172/genesis" rel="noopener" target="_blank">Source on GitHub</a>
   </footer>
 `;
 

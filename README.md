@@ -1,6 +1,6 @@
 # Genesis — JSON Formatter
 
-**Live site:** https://jonathan-joo.github.io/genesis/
+**Live site:** https://jjoo172.github.io/genesis/
 _(pattern: `https://<user>.github.io/<repo>/`; goes live after the one-time Pages setup below)_
 
 A small, fast JSON formatter and validator that runs entirely in the browser. Paste JSON, get it formatted or minified, see where it's broken if it isn't valid, copy or download the result. No accounts, no server, no data leaves the page — your last input and settings are kept in `localStorage` only.
