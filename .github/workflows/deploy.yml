@@ -19,7 +19,22 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  python-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run scanner tests
+        run: python3 -m unittest discover -s backend/tests -v
+
   build:
+    needs: python-tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

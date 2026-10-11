@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Hello, World! produced by Python running in the browser via Pyodide. Vite + TypeScript, deployed to GitHub Pages.",
+  "description": "Memory Safety Scanner: a browser scan of a GitHub repo for risky memory-unsafe patterns. Python rules run via Pyodide.",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

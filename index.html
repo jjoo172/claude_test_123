@@ -4,14 +4,92 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark light" />
-    <meta name="theme-color" content="#0b0d12" />
-    <meta name="description" content="Hello, World! — greeting produced by Python running in your browser via Pyodide." />
+    <meta name="theme-color" content="#10141a" />
+    <meta
+      name="description"
+      content="Scan a GitHub repository for risky memory-unsafe patterns. Analysis runs in your browser with Python and Pyodide."
+    />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
-    <title>Hello, World! · Python in the browser</title>
+    <title>Memory Safety Scanner</title>
     <script src="https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyodide.js"></script>
   </head>
   <body>
-    <div id="app"></div>
+    <div class="wrap">
+      <header class="site-head">
+        <p class="eyebrow">Heuristic source scan</p>
+        <h1>Memory Safety Scanner</h1>
+        <p class="lede">
+          Point this at a GitHub repository. It fetches the source in your browser and runs a Python
+          rule set, via Pyodide, to surface risky memory-unsafe patterns and a few adjacent issues.
+        </p>
+        <p id="runtime" class="runtime" role="status">Loading Python runtime…</p>
+      </header>
+
+      <main>
+        <form id="scan-form" class="panel">
+          <div class="grid">
+            <label class="field">
+              <span>Repository</span>
+              <input
+                id="repo"
+                name="repo"
+                type="text"
+                required
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="owner/repo or https://github.com/owner/repo"
+              />
+            </label>
+            <label class="field">
+              <span>Branch or commit</span>
+              <input
+                id="ref"
+                name="ref"
+                type="text"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="Default branch"
+              />
+            </label>
+          </div>
+
+          <label class="field token-field">
+            <span>GitHub personal access token <em>optional</em></span>
+            <span class="hint">
+              Stored only in this tab’s sessionStorage. It is sent only to api.github.com, never to
+              this site’s host. A token raises the rate limit from 60 to 5,000 requests per hour and
+              can read private repositories the token can access. Public scans fetch file contents
+              from raw.githubusercontent.com and only use the API for the repo, commit, and tree.
+            </span>
+            <span class="token-row">
+              <input id="token" name="token" type="password" autocomplete="off" spellcheck="false" />
+              <button id="toggle-token" type="button" class="ghost">Show</button>
+              <button id="forget-token" type="button" class="ghost">Forget</button>
+            </span>
+          </label>
+
+          <label class="check">
+            <input id="skip-vendored" name="skip-vendored" type="checkbox" checked />
+            <span>Skip vendored and build directories (node_modules, vendor, third_party, dist, build)</span>
+          </label>
+
+          <div class="actions">
+            <button id="scan" type="submit">Scan repository</button>
+            <p id="status" class="status" role="status" aria-live="polite"></p>
+          </div>
+        </form>
+
+        <aside class="disclaimer" role="note">
+          <strong>Not a vulnerability scanner.</strong>
+          This is a heuristic, pattern-based scan. False positives and false negatives are expected.
+          It does not build the project, follow macros, or track data across functions. Complement it
+          with CodeQL, clang-tidy, cargo-audit, and language sanitizers before you trust a dependency.
+        </aside>
+
+        <p id="error" class="banner danger" role="alert" hidden></p>
+        <section id="results" hidden></section>
+      </main>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

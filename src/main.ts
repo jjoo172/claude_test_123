@@ -1,44 +1,143 @@
 import './style.css';
-// `?url` makes Vite emit the Python file as a static asset and hand us its URL,
-// so the same file runs both in the browser and via `python3 backend/hello.py`.
-import helloPyUrl from '../backend/hello.py?url';
+import { bootScanner, type Scanner } from './engine';
+import { fetchRepository } from './github';
+import { renderResults } from './render';
 
-interface Pyodide {
-  runPythonAsync(code: string): Promise<unknown>;
+const TOKEN_KEY = 'memory-safety-scanner.github-token';
+
+function required<T extends Element>(element: T | null, name: string): T {
+  if (!element) throw new Error(`Scanner page is missing ${name}.`);
+  return element;
 }
 
-declare global {
-  // Provided by the Pyodide <script> tag in index.html.
-  function loadPyodide(): Promise<Pyodide>;
+const form = required(document.querySelector<HTMLFormElement>('#scan-form'), 'the scan form');
+const repoInput = required(document.querySelector<HTMLInputElement>('#repo'), 'the repository field');
+const refInput = required(document.querySelector<HTMLInputElement>('#ref'), 'the ref field');
+const tokenInput = required(document.querySelector<HTMLInputElement>('#token'), 'the token field');
+const skipInput = required(document.querySelector<HTMLInputElement>('#skip-vendored'), 'the vendored toggle');
+const scanButton = required(document.querySelector<HTMLButtonElement>('#scan'), 'the scan button');
+const toggleToken = required(document.querySelector<HTMLButtonElement>('#toggle-token'), 'the token toggle');
+const forgetToken = required(document.querySelector<HTMLButtonElement>('#forget-token'), 'the forget button');
+const runtime = required(document.querySelector<HTMLParagraphElement>('#runtime'), 'the runtime status');
+const statusEl = required(document.querySelector<HTMLParagraphElement>('#status'), 'the progress status');
+const errorEl = required(document.querySelector<HTMLParagraphElement>('#error'), 'the error banner');
+const results = required(document.querySelector<HTMLElement>('#results'), 'the results section');
+
+function readStoredToken(): string {
+  try {
+    return sessionStorage.getItem(TOKEN_KEY) ?? '';
+  } catch {
+    return '';
+  }
 }
 
-const app = document.querySelector<HTMLDivElement>('#app');
-if (!app) throw new Error('Missing #app root');
-
-app.innerHTML = `
-  <main class="card">
-    <p id="greeting" class="greeting" role="status" aria-live="polite">Loading Python…</p>
-    <p class="note">Greeting produced by <code>backend/hello.py</code>, run in your browser with Pyodide.</p>
-  </main>
-`;
-
-const greeting = app.querySelector<HTMLParagraphElement>('#greeting')!;
-
-async function main(): Promise<void> {
-  const [pyodide, response] = await Promise.all([loadPyodide(), fetch(helloPyUrl)]);
-  if (!response.ok) throw new Error(`Failed to fetch hello.py: ${response.status}`);
-  const source = await response.text();
-
-  // Run the module, then call its `hello()` and bring the string back to JS.
-  await pyodide.runPythonAsync(source);
-  const message = await pyodide.runPythonAsync('hello()');
-
-  greeting.textContent = String(message);
-  greeting.classList.add('ready');
+function writeStoredToken(value: string): void {
+  try {
+    if (value) sessionStorage.setItem(TOKEN_KEY, value);
+    else sessionStorage.removeItem(TOKEN_KEY);
+  } catch {
+    // sessionStorage can throw in locked-down browsers; the field still works for this scan.
+  }
 }
 
-main().catch((error: unknown) => {
-  console.error(error);
-  greeting.textContent = 'Failed to run Python.';
-  greeting.classList.add('error');
+tokenInput.value = readStoredToken();
+tokenInput.addEventListener('change', () => writeStoredToken(tokenInput.value.trim()));
+
+toggleToken.addEventListener('click', () => {
+  const showing = tokenInput.type === 'text';
+  tokenInput.type = showing ? 'password' : 'text';
+  toggleToken.textContent = showing ? 'Show' : 'Hide';
+});
+
+forgetToken.addEventListener('click', () => {
+  tokenInput.value = '';
+  writeStoredToken('');
+});
+
+let bootPromise: Promise<Scanner> | null = null;
+
+function ensureScanner(): Promise<Scanner> {
+  if (!bootPromise) {
+    bootPromise = bootScanner((message) => {
+      runtime.textContent = message;
+    }).catch((error: unknown) => {
+      bootPromise = null;
+      runtime.textContent = 'Python runtime failed to load';
+      runtime.classList.add('bad');
+      throw error;
+    });
+  }
+  return bootPromise;
+}
+
+function showError(message: string): void {
+  errorEl.hidden = false;
+  errorEl.textContent = message;
+}
+
+form.addEventListener('submit', (event) => {
+  event.preventDefault();
+  void runScan();
+});
+
+async function runScan(): Promise<void> {
+  errorEl.hidden = true;
+  errorEl.textContent = '';
+  results.hidden = true;
+  scanButton.disabled = true;
+  form.setAttribute('aria-busy', 'true');
+  const token = tokenInput.value.trim();
+  writeStoredToken(token);
+
+  try {
+    const scannerPromise = ensureScanner();
+    const fetched = await fetchRepository({
+      input: repoInput.value,
+      refInput: refInput.value,
+      token: token || null,
+      skipVendored: skipInput.checked,
+      onProgress: (message) => {
+        statusEl.textContent = message;
+      },
+    });
+    statusEl.textContent =
+      fetched.files.length === 0
+        ? 'No scannable source files. Waiting for the Python runtime…'
+        : `Scanning ${fetched.files.length} files…`;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const scanner = await scannerPromise;
+    runtime.textContent = 'Python ready';
+    runtime.classList.remove('bad');
+    const report = await scanner.scan(fetched.files);
+    statusEl.textContent = `Scanned ${report.files_scanned} file${report.files_scanned === 1 ? '' : 's'}.`;
+    renderResults(results, {
+      meta: {
+        owner: fetched.owner,
+        repo: fetched.repo,
+        ref: fetched.ref,
+        sha: fetched.sha,
+        filesFetched: fetched.files.length,
+        skippedBinary: fetched.skippedBinary,
+        skippedLarge: fetched.skippedLarge,
+        skippedVendored: fetched.skippedVendored,
+        truncationNote: fetched.truncationNote,
+        warning: fetched.warning,
+      },
+      report,
+    });
+    results.hidden = false;
+    results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'The scan failed.';
+    showError(message);
+    statusEl.textContent = '';
+  } finally {
+    scanButton.disabled = false;
+    form.removeAttribute('aria-busy');
+  }
+}
+
+void ensureScanner().catch((error: unknown) => {
+  const message = error instanceof Error ? error.message : 'The Python runtime failed to load.';
+  showError(message);
 });
