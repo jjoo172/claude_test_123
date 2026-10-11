@@ -4,7 +4,7 @@ import { defineConfig } from 'vite';
 // so built asset URLs must be prefixed with the repo name. The deploy workflow
 // sets VITE_BASE from `actions/configure-pages`; override locally if you fork
 // this under a different name (e.g. `VITE_BASE=/ npm run build` for a user site).
-const base = process.env.VITE_BASE ?? '/genesis/';
+const base = process.env.VITE_BASE ?? '/claude_test_123/';
 
 export default defineConfig({
   base,

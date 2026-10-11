@@ -1,7 +1,9 @@
 # Genesis — JSON Formatter
 
-**Live site:** https://jjoo172.github.io/genesis/
+**Live site:** https://jjoo172.github.io/claude_test_123/
 _(pattern: `https://<user>.github.io/<repo>/`; goes live after the one-time Pages setup below)_
+
+**Source:** https://github.com/jjoo172/claude_test_123
 
 A small, fast JSON formatter and validator that runs entirely in the browser. Paste JSON, get it formatted or minified, see where it's broken if it isn't valid, copy or download the result. No accounts, no server, no data leaves the page — your last input and settings are kept in `localStorage` only.
 
@@ -40,7 +42,7 @@ Only needed if you want to change the site. Visitors never run this.
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173/genesis/
+npm run dev        # http://localhost:5173/claude_test_123/
 npm run build      # outputs static files to dist/
 npm run preview    # serves dist/ locally
 npm run typecheck  # tsc --noEmit
