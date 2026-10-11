@@ -11,5 +11,7 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: false,
+    // Keep backend/hello.py as a real file in dist/ instead of an inlined data: URL.
+    assetsInlineLimit: 0,
   },
 });

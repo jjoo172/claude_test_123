@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Client-only JSON formatter and validator, built with Vite + TypeScript and deployed to GitHub Pages.",
+  "description": "Hello, World! produced by Python running in the browser via Pyodide. Vite + TypeScript, deployed to GitHub Pages.",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

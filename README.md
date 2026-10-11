@@ -1,44 +1,22 @@
-# Genesis — JSON Formatter
+# Hello, World! — Python in the browser
 
 **Live site:** https://jjoo172.github.io/claude_test_123/
-_(pattern: `https://<user>.github.io/<repo>/`; goes live after the one-time Pages setup below)_
-
 **Source:** https://github.com/jjoo172/claude_test_123
 
-A small, fast JSON formatter and validator that runs entirely in the browser. Paste JSON, get it formatted or minified, see where it's broken if it isn't valid, copy or download the result. No accounts, no server, no data leaves the page — your last input and settings are kept in `localStorage` only.
+A minimal static page that prints **"Hello, World!"**. The text is not hard-coded in the frontend: it comes from the Python module [`backend/hello.py`](backend/hello.py), which the page downloads and executes in your browser with [Pyodide](https://pyodide.org) (CPython compiled to WebAssembly, loaded from the jsDelivr CDN). The page shows "Loading Python…" until the runtime is ready.
 
-Built with [Vite](https://vite.dev) + vanilla TypeScript and published as static files to GitHub Pages via GitHub Actions.
+Built with [Vite](https://vite.dev) + TypeScript and published to GitHub Pages by `.github/workflows/deploy.yml` on every push to `main`.
 
-## Features
+## Run the Python backend standalone
 
-- Format with 2 spaces, 4 spaces, or tabs; optional alphabetical key sorting
-- Minify to a single line
-- Live validation with line/column of the first syntax error and a "Jump to error" shortcut
-- Copy to clipboard or download as `formatted.json`
-- Size / lines / keys / depth / root type stats for the output
-- Dark and light themes (follows system preference), keyboard shortcut `Ctrl`/`⌘` + `Enter`
-
-## One-time setup (repo owner)
-
-Pushing to `main` builds and deploys automatically, but GitHub Pages must be enabled once:
-
-1. Open the repository on GitHub → **Settings** → **Pages**.
-2. Under **Build and deployment**, set **Source** to **GitHub Actions**.
-3. Push to `main` (or run the **Deploy to GitHub Pages** workflow manually from the **Actions** tab).
-
-The first successful run of `.github/workflows/deploy.yml` publishes the site at the URL above.
-
-## How deployment works
-
-```text
-git push (main) → GitHub Actions → npm ci && npm run build → dist/ → GitHub Pages
+```bash
+python3 backend/hello.py
+# Hello, World!
 ```
 
-The workflow uses the official `actions/configure-pages`, `actions/upload-pages-artifact`, and `actions/deploy-pages` actions. `configure-pages` reports the site's base path, which is passed to Vite as `VITE_BASE` so asset URLs resolve under `/<repo>/`. If you fork or rename the repo, nothing needs to change.
+The same file is what the browser runs — Vite ships it as a static asset and `src/main.ts` fetches it, runs it with Pyodide, and renders the return value of `hello()`.
 
-## Local development (optional)
-
-Only needed if you want to change the site. Visitors never run this.
+## Local development
 
 ```bash
 npm install
@@ -58,11 +36,10 @@ VITE_BASE=/ npm run build
 
 ```text
 .
-├── index.html                  # entry page
+├── backend/hello.py            # the Python "backend"
+├── index.html                  # entry page; loads Pyodide from the CDN
 ├── src/
-│   ├── main.ts                 # UI wiring
-│   ├── json-tools.ts           # parse / format / minify / stats / error positions
-│   ├── storage.ts              # localStorage persistence
+│   ├── main.ts                 # fetches hello.py, runs it, renders the result
 │   └── style.css
 ├── public/                     # copied as-is (favicon, robots.txt)
 ├── vite.config.ts              # `base` for GitHub Pages
@@ -70,6 +47,6 @@ VITE_BASE=/ npm run build
 └── .github/workflows/deploy.yml
 ```
 
-## Not in scope (yet)
+## Note on server-side Python
 
-Login, cloud sync, and anything needing a server or secrets. See the project outline for how to add a backend-as-a-service or serverless functions later if a concrete need appears.
+GitHub Pages only serves static files, so Python can't run on the server here — that's why it runs in the browser. A real server-side backend (e.g. FastAPI or Flask) would need separate hosting (Fly.io, Render, a VPS, …) with the Pages site calling it over HTTP.
